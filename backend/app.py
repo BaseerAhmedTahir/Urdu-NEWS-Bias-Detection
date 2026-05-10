@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from services.predictor import predict
 from services.validator import is_urdu
 from services.url_extractor import extract_text_from_url
@@ -16,6 +16,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+MAX_INPUT_LENGTH = 15000  # Max characters to prevent SHAP from hanging
 
 class RequestData(BaseModel):
     text: str = None
@@ -39,6 +41,13 @@ async def classify(data: RequestData):
     else:
         raise HTTPException(status_code=400, detail="No input provided. Please provide 'text' or 'url'.")
 
+    # Validate input length
+    if len(input_text) > MAX_INPUT_LENGTH:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Input text too long ({len(input_text)} chars). Maximum allowed is {MAX_INPUT_LENGTH} characters."
+        )
+
     # Validate if it's Urdu
     if not is_urdu(input_text):
         raise HTTPException(status_code=400, detail="The input text does not appear to be in Urdu.")
@@ -57,7 +66,7 @@ async def classify(data: RequestData):
         raise HTTPException(status_code=500, detail="An error occurred during prediction.")
 
 class LLMRequest(BaseModel):
-    sentence: str
+    sentence: str = Field(..., max_length=2000)
 
 class LLMExplainRequest(BaseModel):
     data: dict

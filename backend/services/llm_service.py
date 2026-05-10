@@ -1,19 +1,27 @@
 import os
 import sys
+from functools import lru_cache
 from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# Singleton client — initialized once at module load
+_client = None
+
 def get_client():
+    global _client
+    if _client is not None:
+        return _client
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key or api_key == "your_api_key_here":
         print("WARNING: DEEPSEEK_API_KEY is missing or invalid. LLM features will not work.")
         return None
-    return OpenAI(
+    _client = OpenAI(
         api_key=api_key,
         base_url="https://api.deepseek.com"
     )
+    return _client
 
 def explain_bias(sentence_data):
     """

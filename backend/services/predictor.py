@@ -3,7 +3,11 @@ import re
 import joblib
 import numpy as np
 import shap
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
+
+# Load environment variables before any model initialization
+load_dotenv(os.path.join(os.path.dirname(__file__), '../.env'))
 
 # ===============================
 # LOAD MODELS & ARTIFACTS

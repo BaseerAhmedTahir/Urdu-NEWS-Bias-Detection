@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useLang } from "./context/LangContext";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 const translations = {
   en: {
     title: "URDU BIAS DETECTION",
@@ -24,8 +26,6 @@ const translations = {
     error: "An error occurred.",
     urduValidation: "Input must be in Urdu language.",
     kicker: "INTELLIGENCE",
-    langToggle: "اردو",
-    dir: "ltr",
     semanticInfluence: "SEMANTIC INFLUENCE (LaBSE)",
     semanticStrength: "Strength",
     semanticDirection: "Direction",
@@ -34,6 +34,10 @@ const translations = {
     explanationTitle: "WHY IS THIS BIASED?",
     neutralVersionTitle: "NEUTRAL VERSION",
     loadingLLM: "Consulting LLM Analyst...",
+    dismiss: "DISMISS",
+    xaiTitle: "EXPLAINABLE AI: SENTENCE ATTENTION MAP",
+    semanticContext: "SEMANTIC CONTEXT (DEEP ANALYSIS)",
+    llmError: "Could not connect to LLM service.",
   },
   ur: {
     title: "اردو جانبدارانہ تحریر کی شناخت",
@@ -55,8 +59,6 @@ const translations = {
     error: "کچھ غلط ہو گیا ہے۔",
     urduValidation: "متن اردو زبان میں ہونا ضروری ہے۔",
     kicker: "انٹیلی جنس",
-    langToggle: "English",
-    dir: "rtl",
     semanticInfluence: "سیمنٹک اثر (LaBSE)",
     semanticStrength: "شدت",
     semanticDirection: "سمت",
@@ -65,6 +67,10 @@ const translations = {
     explanationTitle: "یہ کیوں جانبدارانہ ہے؟",
     neutralVersionTitle: "غیر جانبدار ورژن",
     loadingLLM: "ایل ایل ایم تجزیہ کار سے مشورہ کیا جا رہا ہے...",
+    dismiss: "خارج کریں",
+    xaiTitle: "وضاحتی اے آئی: جملوں کا توجہ نقشہ",
+    semanticContext: "معنوی سیاق (گہرا تجزیہ)",
+    llmError: "ایل ایل ایم سروس سے رابطہ نہیں ہو سکا۔",
   },
 };
 
@@ -97,7 +103,7 @@ export default function Home() {
     const payload = inputUrl ? { url: inputUrl } : { text: inputText };
 
     try {
-      const response = await fetch("http://localhost:8000/predict", {
+      const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,7 +137,7 @@ export default function Home() {
     console.log(`[FRONTEND] Requesting grounded explanation for sentence ${idx}`);
     setLlmData(prev => ({ ...prev, [idx]: { ...prev[idx], loading: true } }));
     try {
-      const response = await fetch("http://localhost:8000/explain", {
+      const response = await fetch(`${API_URL}/explain`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data: sentenceData }),
@@ -148,7 +154,7 @@ export default function Home() {
       }));
     } catch (err) {
       console.error(`[FRONTEND] Error fetching explanation:`, err);
-      setLlmData(prev => ({ ...prev, [idx]: { ...prev[idx], loading: false } }));
+      setLlmData(prev => ({ ...prev, [idx]: { ...prev[idx], loading: false, explanation: t.llmError } }));
     }
   };
 
@@ -156,7 +162,7 @@ export default function Home() {
     console.log(`[FRONTEND] Requesting rewrite for sentence ${idx}`);
     setLlmData(prev => ({ ...prev, [idx]: { ...prev[idx], loading: true } }));
     try {
-      const response = await fetch("http://localhost:8000/rewrite", {
+      const response = await fetch(`${API_URL}/rewrite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sentence }),
@@ -173,7 +179,7 @@ export default function Home() {
       }));
     } catch (err) {
       console.error(`[FRONTEND] Error fetching rewrite:`, err);
-      setLlmData(prev => ({ ...prev, [idx]: { ...prev[idx], loading: false } }));
+      setLlmData(prev => ({ ...prev, [idx]: { ...prev[idx], loading: false, rewritten: t.llmError } }));
     }
   };
 
@@ -210,10 +216,10 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="kicker text-black mb-2">{t.kicker}</div>
           <h1 className="text-5xl md:text-7xl font-playfair font-black mb-4 tracking-tighter">
-            {translations.en.title}
+            {t.title}
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 font-lora italic">
-            {translations.en.subtitle}
+            {t.subtitle}
           </p>
         </div>
       </header>
@@ -229,7 +235,7 @@ export default function Home() {
                 onClick={() => setError("")}
                 className="mt-4 kicker underline"
               >
-                DISMISS
+                {t.dismiss}
               </button>
             )}
           </div>
@@ -323,7 +329,7 @@ export default function Home() {
                 {/* Semantic Signal */}
                 {result.semantic_signal && (
                   <div className="border-2 border-black p-4 bg-gray-50 animate-fade-in relative overflow-hidden">
-                    <div className="kicker text-black mb-2 border-b border-black pb-1 text-[10px]">SEMANTIC CONTEXT (DEEP ANALYSIS)</div>
+                    <div className="kicker text-black mb-2 border-b border-black pb-1 text-[10px]">{t.semanticContext}</div>
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
                         <p className="text-[11px] text-gray-600 leading-tight">
@@ -345,7 +351,7 @@ export default function Home() {
             {result.sentence_scores && (
               <div className="mt-12 p-8 border-2 border-black bg-white relative">
                 <div className="bg-black text-white px-3 py-1 inline-block kicker mb-6 absolute -top-4 left-6 z-20">
-                  EXPLAINABLE AI: SENTENCE ATTENTION MAP
+                  {t.xaiTitle}
                 </div>
                 
                 {/* Legend */}
