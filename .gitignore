@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Virtual environments
+venv/
+venv_win/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Model cache (large HuggingFace downloads)
+backend/cache/
+
+# Environment variables (secrets)
+backend/.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

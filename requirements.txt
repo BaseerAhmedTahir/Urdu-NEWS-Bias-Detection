@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+scikit-learn
+pandas
+numpy
+joblib
+sentence-transformers
+beautifulsoup4
+requests
+python-multipart
+openai
+python-dotenv
+shap
