@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useLang } from "./context/LangContext";
 
 const translations = {
   en: {
@@ -17,7 +18,6 @@ const translations = {
     resultsTitle: "ANALYSIS RESULTS",
     prediction: "PREDICTION",
     confidence: "CONFIDENCE",
-// ... rest of en translations ...
     summary: "TEXT PREVIEW",
     biased: "BIASED",
     unbiased: "UNBIASED",
@@ -49,7 +49,6 @@ const translations = {
     resultsTitle: "تجزیہ کے نتائج",
     prediction: "نتیجہ",
     confidence: "یقین دہانی",
-// ... rest of ur translations ...
     summary: "متن کا خلاصہ",
     biased: "جانبدار",
     unbiased: "غیر جانبدار",
@@ -70,9 +69,7 @@ const translations = {
 };
 
 export default function Home() {
-// ... existing state ...
-  const [mounted, setMounted] = useState(false);
-  const [lang, setLang] = useState<"en" | "ur">("en");
+  const { lang } = useLang();
   const [inputText, setInputText] = useState("");
   const [inputUrl, setInputUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,18 +80,7 @@ export default function Home() {
   // LLM Interaction State
   const [llmData, setLlmData] = useState<{[key: number]: { explanation?: string, rewritten?: string, loading?: boolean }}>({});
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const t = translations[lang];
-
-  useEffect(() => {
-    if (mounted) {
-      document.documentElement.dir = t.dir;
-      document.documentElement.lang = lang;
-    }
-  }, [lang, t.dir, mounted]);
 
   // Scroll heat map to top whenever a new result is loaded
   useEffect(() => {
@@ -103,23 +89,10 @@ export default function Home() {
     }
   }, [result]);
 
-  if (!mounted) {
-    return <div className="min-h-screen bg-white" />; // Clean skeleton for initial load
-  }
-
-  const toggleLang = () => {
-    setLang(lang === "en" ? "ur" : "en");
-  };
-
   const handlePredict = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    // We don't clear result immediately here so loading state is handled by the button
-    // Actually, user wants it to swap, so let's keep it until fetch completes or clear it?
-    // Let's clear it on fetch start to show processing in place of input.
-    // Wait, user said "load in place of input boxes". 
-    // So when Analyze is clicked, input boxes disappear, result appears.
     
     const payload = inputUrl ? { url: inputUrl } : { text: inputText };
 
@@ -150,13 +123,10 @@ export default function Home() {
   const handleNewAnalysis = () => {
     setResult(null);
     setError("");
-    // Keep inputText/Url for convenience? User said "revert to input boxes". 
-    // Usually clears but let's see. I'll clear them to make it a fresh start.
     setInputText("");
     setInputUrl("");
   };
 
-// ... handleExplain, handleRewrite, getHighlightIndices ...
   const handleExplain = async (sentenceData: any, idx: number) => {
     console.log(`[FRONTEND] Requesting grounded explanation for sentence ${idx}`);
     setLlmData(prev => ({ ...prev, [idx]: { ...prev[idx], loading: true } }));
@@ -213,7 +183,6 @@ export default function Home() {
     
     const THRESHOLD = 0.15;
 
-    // Filter for meaningful signals first
     const biasedPool = sentenceScores
       .map((item, idx) => ({ ...item, idx }))
       .filter(item => item.score >= THRESHOLD)
@@ -223,7 +192,7 @@ export default function Home() {
     const unbiasedPool = sentenceScores
       .map((item, idx) => ({ ...item, idx }))
       .filter(item => item.score <= -THRESHOLD)
-      .sort((a, b) => a.score - b.score) // Most negative first
+      .sort((a, b) => a.score - b.score)
       .slice(0, 5);
       
     return {
@@ -235,25 +204,7 @@ export default function Home() {
   const highlightIndices = result?.sentence_scores ? getHighlightIndices(result.sentence_scores) : { biased: new Set(), unbiased: new Set() };
 
   return (
-// ... Utility Bar ...
-// ... Header ...
-// ... Input Section ...
-// ... Error Display ...
-// ... Results Section ...
-// ... Legend Section (Update needed inside JSX loop for intensity)
-
-    <div className={`min-h-screen bg-white ${lang === "ur" ? "font-urdu" : "font-lora"}`}>
-      {/* Utility Bar */}
-      <div className="bg-black text-white py-2 px-4 flex justify-between items-center">
-        <div className="kicker text-[10px]">PROJECT: UNBDAPP_V2</div>
-        <button 
-          onClick={toggleLang}
-          className="kicker text-[10px] hover:text-link-blue transition-colors cursor-pointer"
-        >
-          {t.langToggle}
-        </button>
-      </div>
-
+    <div>
       {/* Header */}
       <header className="border-b-2 border-black py-8 px-4 text-center">
         <div className="max-w-4xl mx-auto">
@@ -369,7 +320,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Semantic Signal as Qualitative 'Underlying Tone' */}
+                {/* Semantic Signal */}
                 {result.semantic_signal && (
                   <div className="border-2 border-black p-4 bg-gray-50 animate-fade-in relative overflow-hidden">
                     <div className="kicker text-black mb-2 border-b border-black pb-1 text-[10px]">SEMANTIC CONTEXT (DEEP ANALYSIS)</div>
@@ -390,14 +341,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bottom Section: Scrollable Sentence Level Highlighting (XAI) */}
+            {/* Sentence Level Highlighting (XAI) */}
             {result.sentence_scores && (
               <div className="mt-12 p-8 border-2 border-black bg-white relative">
                 <div className="bg-black text-white px-3 py-1 inline-block kicker mb-6 absolute -top-4 left-6 z-20">
                   EXPLAINABLE AI: SENTENCE ATTENTION MAP
                 </div>
                 
-                {/* Legend positioned at top right of the map container */}
+                {/* Legend */}
                 <div className="absolute -top-4 right-6 z-20 bg-white border-2 border-black p-2 flex gap-4">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
@@ -439,11 +390,11 @@ export default function Home() {
                       let borderColor = "transparent";
                       
                       if (isBiased) {
-                        bgColor = isStrong ? "#fecaca" : "#fee2e2"; // red-200 vs red-100
-                        borderColor = isStrong ? "#b91c1c" : "#dc2626"; // red-700 vs red-600
+                        bgColor = isStrong ? "#fecaca" : "#fee2e2";
+                        borderColor = isStrong ? "#b91c1c" : "#dc2626";
                       } else if (isUnbiased) {
-                        bgColor = isStrong ? "#dcfce7" : "#f0fdf4"; // green-200 vs green-100
-                        borderColor = isStrong ? "#15803d" : "#16a34a"; // green-700 vs green-600
+                        bgColor = isStrong ? "#dcfce7" : "#f0fdf4";
+                        borderColor = isStrong ? "#15803d" : "#16a34a";
                       }
 
                       return (
@@ -534,28 +485,6 @@ export default function Home() {
           </section>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-foreground text-white py-12 px-4 mt-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-playfair font-black mb-8 tracking-tighter text-white">WIRED × UNBDAPP</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 border-t border-gray-700 pt-8">
-            <div className="text-left">
-              <div className="kicker text-gray-400 mb-4">METHODOLOGY</div>
-              <p className="text-sm text-gray-400">Hybrid TF-IDF & LaBSE embeddings processed through Stratified K-Fold Logistic Regression.</p>
-            </div>
-            <div className="text-left">
-              <div className="kicker text-gray-400 mb-4">RELIABILITY</div>
-              <p className="text-sm text-gray-400">Trained on 10,000+ verified Urdu news samples for high-confidence classification.</p>
-            </div>
-            <div className="text-left">
-              <div className="kicker text-gray-400 mb-4">OPEN ACCESS</div>
-              <p className="text-sm text-gray-400">An open-source initiative for promoting transparency in digital Urdu media.</p>
-            </div>
-          </div>
-          <div className="kicker text-gray-500 text-[10px]">© 2026 UNBDAPP PROJECT. NO ROUNDED CORNERS WERE HARMED IN THE MAKING OF THIS SITE.</div>
-        </div>
-      </footer>
     </div>
   );
 }
